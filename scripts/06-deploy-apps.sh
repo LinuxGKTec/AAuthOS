@@ -72,6 +72,17 @@ build_agent "supply-chain"    "supply-chain-agent"    "aauth/supply-chain-agent:
 build_agent "market-analysis" "market-analysis-agent" "aauth/market-analysis-agent:dev"
 
 echo "==> Building frontend (no SDK — UI is not a registered agent)"
+if [[ ! -f "${WORK}/aauth-full-demo/supply-chain-ui/Dockerfile" ]]; then
+  cat > "${WORK}/aauth-full-demo/supply-chain-ui/Dockerfile" <<'EOF'
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3050
+CMD ["npm", "start"]
+EOF
+fi
 docker build -t aauth/supply-chain-ui:dev "${WORK}/aauth-full-demo/supply-chain-ui"
 kind load docker-image aauth/supply-chain-ui:dev --name "${CLUSTER_NAME}"
 
