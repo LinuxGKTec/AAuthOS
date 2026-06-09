@@ -97,9 +97,18 @@ def _insert_after_app_construct(src: str, block: str) -> str:
     """Insert `block` after the first `app = FastAPI(...)` line."""
     if block in src:
         return src
+
+    def with_indent(text: str, indent: str) -> str:
+        return "\n".join(indent + line if line else line for line in text.splitlines())
+
     pattern = re.compile(r"^app\s*=\s*FastAPI\s*\(.*?\)\s*$", re.MULTILINE | re.DOTALL)
     m = pattern.search(src)
     if not m:
+        starlette = re.search(r"^(?P<indent>\s*)app\s*=\s*server\.build\(\)\s*$", src, re.MULTILINE)
+        if starlette:
+            block_text = with_indent(block, starlette.group("indent"))
+            return src[: starlette.end()] + "\n\n" + block_text + "\n" + src[starlette.end():]
+
         # Fallback: look for `app = FastAPI(` and find the matching `)`.
         idx = src.find("app = FastAPI(")
         if idx < 0:
@@ -122,14 +131,14 @@ def patch_file(path: Path, *, add_boot: bool, add_app_wiring: bool) -> None:
     if not path.exists():
         print(f"[skip] {path} does not exist (upstream layout may have changed)")
         return
-    src = path.read_text()
+    src = path.read_text(encoding="utf-8")
     original = src
     if add_boot:
         src = _insert_after_imports(src, BOOT_BLOCK_TEMPLATE)
     if add_app_wiring:
         src = _insert_after_app_construct(src, APP_WIRING_TEMPLATE)
     if src != original:
-        path.write_text(src)
+        path.write_text(src, encoding="utf-8")
         print(f"[patched] {path}")
     else:
         print(f"[unchanged] {path} (already patched or no anchor found)")
@@ -139,7 +148,7 @@ def replace_interceptor(path: Path) -> None:
     if not path.exists():
         print(f"[skip] interceptor at {path} does not exist (already removed?)")
         return
-    path.write_text(STUB_INTERCEPTOR)
+    path.write_text(STUB_INTERCEPTOR,  encoding="utf-8")
     print(f"[stubbed] {path}")
 
 
