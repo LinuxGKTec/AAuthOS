@@ -31,18 +31,25 @@ python3 "${PATCHER}" "${WORK}/aauth-full-demo"
 stage_sdk_for() {
   local subdir="$1"
   local dst="${WORK}/aauth-full-demo/${subdir}/aauth-sdk"
+  local copy_src="aauth-sdk"
   rm -rf "${dst}"
   cp -R "${SDK_DIR}" "${dst}"
 
-  local df="${WORK}/aauth-full-demo/${subdir}/Dockerfile"
+ local df="${WORK}/aauth-full-demo/${subdir}/Dockerfile"
   if ! grep -q "aauth-sdk" "${df}"; then
-    # Inject before the CMD so the install happens early enough to fail fast.
+    # Backend builds from the upstream repo root; agent images build from their
+    # own subdirectories. Match the Dockerfile COPY source to that context.
+    if [[ "${subdir}" == "backend" ]]; then
+      copy_src="backend/aauth-sdk"
+    fi
+    # Inject before USER so the SDK install runs as root and fails fast.
     awk '
-      /^CMD/ && !done { print "COPY aauth-sdk /opt/aauth-sdk"; print "RUN pip install /opt/aauth-sdk"; done=1 } { print }
+      /^USER/ && !done { print "COPY '"${copy_src}"' /opt/aauth-sdk"; print "RUN pip install /opt/aauth-sdk"; done=1 } { print }
     ' "${df}" > "${df}.new" && mv "${df}.new" "${df}"
     echo "    patched ${df}"
   fi
 }
+
 
 stage_sdk_for "backend"
 stage_sdk_for "supply-chain-agent"
@@ -52,6 +59,11 @@ build_agent() {
   local name="$1"; local subdir="$2"; local image="$3"
   echo "==> Building ${image} from upstream ${subdir}"
   docker build -t "${image}" "${WORK}/aauth-full-demo/${subdir}"
+  if [[ "${subdir}" == "backend" ]]; then
+    docker build -t "${image}" -f "${WORK}/aauth-full-demo/${subdir}/Dockerfile" "${WORK}/aauth-full-demo"
+  else
+    docker build -t "${image}" "${WORK}/aauth-full-demo/${subdir}"
+  fi
   kind load docker-image "${image}" --name "${CLUSTER_NAME}"
 }
 
