@@ -22,6 +22,7 @@ spec:
             - { containerPort: 8080, name: http }
             - { containerPort: 8443, name: https }
             - { containerPort: 9100, name: admin }
+            - { containerPort: 15021, name: readiness }
           env:
             - name: AGENTGATEWAY_POLICY_PATH
               value: /etc/agentgateway/policy.yaml
@@ -34,8 +35,8 @@ spec:
             - name: policy
               mountPath: /etc/agentgateway
               readOnly: true
-          readinessProbe:
-            httpGet: { path: /healthz, port: 8080 }
+           readinessProbe:
+            tcpSocket: { port: 15021 }
             initialDelaySeconds: 3
             periodSeconds: 5
       volumes:
