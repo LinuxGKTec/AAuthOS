@@ -29,7 +29,7 @@ register() {
 
   local resp
   resp="$(kubectl -n "${NS}" exec deploy/registry-service -- \
-    curl -sf -X POST http://localhost:9000/v1/agents \
+    curl -sf -u "operator:aauth-operator-demo" -X POST http://localhost:9000/v1/agents \
     -H 'Content-Type: application/json' \
     -d "${body}")"
 

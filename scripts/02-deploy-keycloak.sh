@@ -26,10 +26,12 @@ helm upgrade --install keycloak "${KC_CHART}" \
   --version "${KC_VERSION}" \
   --values "${KC_VALUES}" \
   --wait \
-  --timeout 10m
+  --timeout 5m
 
 echo "==> Waiting for Keycloak to be ready"
-kubectl -n "${NS}" wait --for=condition=Available deployment/keycloak --timeout=10m
+#kubectl -n "${NS}" wait --for=condition=Available deployment/keycloak --timeout=5m
+#kubectl -n "${NS}" wait --for=condition=Ready statefulset/keycloak --timeout=5m
+kubectl -n "${NS}" wait --for=condition=Ready pod/keycloak-0 --timeout=5m
 
 # Sanity-check the realm import.
 kubectl -n "${NS}" port-forward svc/keycloak 18080:80 >/dev/null 2>&1 &
