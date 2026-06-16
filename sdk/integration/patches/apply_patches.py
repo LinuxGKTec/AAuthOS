@@ -93,8 +93,8 @@ def _insert_after_imports(src: str, block: str) -> str:
     return "\n".join(lines[:inject_at] + [""] + block.splitlines() + [""] + lines[inject_at:])
 
 
-def _insert_after_app_construct(src: str, block: str) -> str:
-    """Insert `block` after the first `app = FastAPI(...)` line."""
+"""def _insert_after_app_construct(src: str, block: str) -> str:
+    ""Insert `block` after the first `app = FastAPI(...)` line.""
     if block in src:
         return src
     pattern = re.compile(r"^app\s*=\s*FastAPI\s*\(.*?\)\s*$", re.MULTILINE | re.DOTALL)
@@ -115,8 +115,53 @@ def _insert_after_app_construct(src: str, block: str) -> str:
                     end = i + 1
                     break
         return src[:end] + "\n\n" + block + "\n" + src[end:]
-    return src[: m.end()] + "\n\n" + block + "\n" + src[m.end():]
+    return src[: m.end()] + "\n\n" + block + "\n" + src[m.end():]"""
 
+def _insert_after_app_construct(src: str, block: str) -> str:
+    """Insert `block` after the ASGI/FastAPI application initialization anchor."""
+    if block in src:
+        return src
+
+    # Target lines like: app = FastAPI(...), app = server.build(), app = Starlette(...)
+    anchors = ["= FastAPI(", "= server.build(", "= Starlette("]
+    idx = -1
+    matched_anchor = ""
+    
+    # Normalize spaces inside the search array to ensure we catch minor formatting variations
+    normalized_src = src.replace(" ", "")
+    
+    for anchor in anchors:
+        norm_anchor = anchor.replace(" ", "")
+        if norm_anchor in normalized_src:
+            # Find where it actually sits in the original source code string
+            # We look for the variable assignment leading to the constructor
+            import re
+            match = re.search(r"app\s*=\s*" + re.escape(anchor.split("=")[1].strip()), src)
+            if match:
+                idx = match.start()
+                matched_anchor = anchor
+                break
+
+    if idx < 0:
+        raise RuntimeError("could not find an application initialization anchor (`app = ...`) to hook wiring")
+
+    # Find the end of the statement line or its closing parenthesis bounds
+    depth = 0
+    end = idx
+    for i in range(idx, len(src)):
+        if src[i] == "(":
+            depth += 1
+        elif src[i] == ")":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+        elif src[i] == "\n" and depth == 0:
+            # If it's a direct function call without long wrapped tuples, break at the newline
+            end = i
+            break
+            
+    return src[:end] + "\n\n" + block + "\n" + src[end:]
 
 def patch_file(path: Path, *, add_boot: bool, add_app_wiring: bool) -> None:
     if not path.exists():

@@ -14,9 +14,10 @@ kubectl -n "${NS}" rollout status deploy/agentgateway --timeout=180s
 echo "==> Seeding initial policy from the platform registry"
 # The registry exposes a /v1/policy/render endpoint that returns the current
 # agentgateway-flavored policy. We patch it into the policy ConfigMap.
+kubectl exec -it deploy/registry-service -n platform -- sh -c "apt-get update && apt-get install -y curl"
 RENDERED="$(mktemp)"
 kubectl -n "${PLATFORM_NS:-platform}" exec deploy/registry-service -- \
-  curl -sf http://localhost:9000/v1/policy/render > "${RENDERED}"
+  curl -sf -u "operator:aauth-operator-demo" http://localhost:9000/v1/policy/render > "${RENDERED}"
 
 kubectl -n "${NS}" create configmap agentgateway-policy \
   --from-file=policy.yaml="${RENDERED}" \

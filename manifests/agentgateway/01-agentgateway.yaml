@@ -35,7 +35,7 @@ spec:
             - name: policy
               mountPath: /etc/agentgateway
               readOnly: true
-           readinessProbe:
+          readinessProbe:
             tcpSocket: { port: 15021 }
             initialDelaySeconds: 3
             periodSeconds: 5

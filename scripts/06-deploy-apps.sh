@@ -35,10 +35,14 @@ stage_sdk_for() {
   cp -R "${SDK_DIR}" "${dst}"
 
   local df="${WORK}/aauth-full-demo/${subdir}/Dockerfile"
+  # FIX: Reset the Dockerfile to its clean git state before patching
+  #(cd "${WORK}/aauth-full-demo" && git checkout -- "${subdir}/Dockerfile")
+
   if ! grep -q "aauth-sdk" "${df}"; then
     # Inject before the CMD so the install happens early enough to fail fast.
-    awk '
-      /^CMD/ && !done { print "COPY aauth-sdk /opt/aauth-sdk"; print "RUN pip install /opt/aauth-sdk"; done=1 } { print }
+    #{ print "COPY aauth-sdk /opt/aauth-sdk"; print "RUN pip install /opt/aauth-sdk"; done=1 } { print }
+    awk -v sd="${subdir}" '
+      /^CMD/ && !done { print "COPY --chown=app:app " sd "/aauth-sdk /opt/aauth-sdk"; print "RUN pip install /opt/aauth-sdk"; done=1 } { print }
     ' "${df}" > "${df}.new" && mv "${df}.new" "${df}"
     echo "    patched ${df}"
   fi
@@ -51,7 +55,10 @@ stage_sdk_for "market-analysis-agent"
 build_agent() {
   local name="$1"; local subdir="$2"; local image="$3"
   echo "==> Building ${image} from upstream ${subdir}"
-  docker build -t "${image}" "${WORK}/aauth-full-demo/${subdir}"
+  #docker build -t "${image}" "${WORK}/aauth-full-demo/${subdir}"
+  docker build --no-cache -t "${image}" \
+    -f "${WORK}/aauth-full-demo/${subdir}/Dockerfile" \
+    "${WORK}/aauth-full-demo"
   kind load docker-image "${image}" --name "${CLUSTER_NAME}"
 }
 
