@@ -59,5 +59,5 @@ class AgentConfig:
             idp_jwks_url=req("IDP_JWKS_URL"),
             idp_flavor=os.environ.get("IDP_FLAVOR", "radiantlogic"),
             signature_scheme=os.environ.get("AAUTH_SIGNATURE_SCHEME", "jwks"),
-            key_state_dir=os.environ.get("AAUTH_KEY_STATE_DIR", "/var/lib/aauth"),
+            key_state_dir=os.environ.get("AAUTH_KEY_STATE_DIR", "/tmp/aauth"),
         )
