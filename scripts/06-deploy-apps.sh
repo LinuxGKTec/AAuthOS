@@ -35,16 +35,35 @@ stage_sdk_for() {
   cp -R "${SDK_DIR}" "${dst}"
 
   local df="${WORK}/aauth-full-demo/${subdir}/Dockerfile"
-  # FIX: Reset the Dockerfile to its clean git state before patching
-  #(cd "${WORK}/aauth-full-demo" && git checkout -- "${subdir}/Dockerfile")
+  local pyproj="${WORK}/aauth-full-demo/${subdir}/pyproject.toml"
 
+  # 1. Clean the files via git checkout before patching to guarantee a fresh state
+  (cd "${WORK}/aauth-full-demo" && git checkout -- "${subdir}/Dockerfile" "${subdir}/pyproject.toml" 2>/dev/null || true)
+
+  # 2. Inject the COPY block immediately before uv pip install runs
   if ! grep -q "aauth-sdk" "${df}"; then
-    # Inject before the CMD so the install happens early enough to fail fast.
-    #{ print "COPY aauth-sdk /opt/aauth-sdk"; print "RUN pip install /opt/aauth-sdk"; done=1 } { print }
-    awk -v sd="${subdir}" '
-      /^CMD/ && !done { print "COPY --chown=app:app " sd "/aauth-sdk /opt/aauth-sdk"; print "RUN pip install /opt/aauth-sdk"; done=1 } { print }
+    awk '
+      /RUN uv pip install/ && !done { 
+        print "COPY --chown=app:app '"${subdir}"'/aauth-sdk /app/aauth-sdk";
+        done=1;
+      } 
+      { print }
     ' "${df}" > "${df}.new" && mv "${df}.new" "${df}"
-    echo "    patched ${df}"
+    echo "    patched ${df} (added early context COPY)"
+  fi
+
+  # 3. Inject the dependency safely into pyproject.toml
+  if [[ -f "${pyproj}" ]] && ! grep -q "aauth-sdk" "${pyproj}"; then
+    echo "==> Patching pyproject.toml for ${subdir}"
+    awk '
+      /dependencies = \[/ && !done {
+        print;
+        print "    \"aauth-sdk @ file:///app/aauth-sdk\",";
+        done=1;
+        next;
+      }
+      { print }
+    ' "${pyproj}" > "${pyproj}.new" && mv "${pyproj}.new" "${pyproj}"
   fi
 }
 
@@ -56,7 +75,7 @@ build_agent() {
   local name="$1"; local subdir="$2"; local image="$3"
   echo "==> Building ${image} from upstream ${subdir}"
   #docker build -t "${image}" "${WORK}/aauth-full-demo/${subdir}"
-  docker build --no-cache -t "${image}" \
+ docker build -t "${image}" \
     -f "${WORK}/aauth-full-demo/${subdir}/Dockerfile" \
     "${WORK}/aauth-full-demo"
   kind load docker-image "${image}" --name "${CLUSTER_NAME}"

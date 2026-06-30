@@ -19,9 +19,13 @@ spec:
             - { containerPort: 9002, name: http }
           env:
             - { name: PORT, value: "9002" }
+          # --- ADD THIS BLOCK TO INJECT THE CONFIGMAP ---
+          envFrom:
+            - configMapRef:
+                name: operator-auth  # <-- 'name' must be indented under configMapRef
           readinessProbe:
             httpGet: { path: /index.html, port: 9002 }
-            initialDelaySeconds: 2
+            initialDelaySeconds: 10 # Bumped this up slightly to give the app time to breathe
             periodSeconds: 5
 ---
 apiVersion: v1

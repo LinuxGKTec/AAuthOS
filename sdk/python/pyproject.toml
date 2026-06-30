@@ -3,8 +3,9 @@ name = "aauth-sdk"
 version = "0.1.0"
 description = "AAuth Mission Platform client SDK — enrollment, RFC 9421 signing, mission_id propagation, RFC 8693 token exchange"
 requires-python = ">=3.12"
+#"fastapi>=0.115"
 dependencies = [
-  "fastapi>=0.115",
+  "fastapi>=0.104.0",
   "httpx>=0.27",
   "pydantic>=2.7",
   "cryptography>=42",

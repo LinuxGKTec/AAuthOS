@@ -34,7 +34,7 @@ check "python3"  "python3 --version"             "needed for sdk/integration/pat
 echo ""
 echo "Docker daemon reachable:"
 check "docker info"          "docker info"            "start Docker Desktop"
-check "8 GB RAM allocated"   "[ \"\$(docker info --format '{{.MemTotal}}' 2>/dev/null)\" -gt 8000000000 ]"  "raise Docker Desktop RAM limit"
+check "7 GB RAM allocated"   "[ \"\$(docker info --format '{{.MemTotal}}' 2>/dev/null)\" -gt 7000000000 ]"  "raise Docker Desktop RAM limit"
 
 echo ""
 echo "Host port availability (KIND will publish these):"

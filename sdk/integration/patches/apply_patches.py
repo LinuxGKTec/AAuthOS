@@ -44,6 +44,10 @@ STUB_INTERCEPTOR = dedent(
     """
     from aauth_sdk import Agent, MissionMiddleware  # noqa: F401
 
+    class AAuthSigningInterceptor:
+        def __init__(self, *args, **kwargs):
+            pass
+
     def sign_outbound(*args, **kwargs):
         raise RuntimeError("sign_outbound() is replaced by Agent.client(...) — see sdk/python/README.md")
 

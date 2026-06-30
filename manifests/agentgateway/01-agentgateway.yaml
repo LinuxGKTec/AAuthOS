@@ -17,6 +17,7 @@ spec:
           # placeholder ships with a permissive policy and a /healthz endpoint
           # for KIND validation.
           image: ghcr.io/agentgateway/agentgateway:latest
+          #image: ghcr.io/agentgateway/agentgateway:v0.0.0-alpha.82a5c00b
           imagePullPolicy: IfNotPresent
           ports:
             - { containerPort: 8080, name: http }
@@ -24,8 +25,10 @@ spec:
             - { containerPort: 9100, name: admin }
             - { containerPort: 15021, name: readiness }
           env:
-            - name: AGENTGATEWAY_POLICY_PATH
+            - name: LOCAL_XDS_PATH
               value: /etc/agentgateway/policy.yaml
+            #- name: AGENTGATEWAY_POLICY_PATH
+            #  value: /etc/agentgateway/policy.yaml
             - name: REGISTRY_JWKS_URL
               value: http://registry-service.platform.svc.cluster.local:9000/v1/agents/jwks.json
             - name: IDP_JWKS_URL
@@ -65,9 +68,12 @@ data:
   # Empty starter policy. scripts/04-deploy-agentgateway.sh seeds this from
   # registry-service /v1/policy/render once agents are registered.
   policy.yaml: |
-    version: 1
-    agents: []
-    missions: { allowAny: true }
+    config: {}
+    policies: []
+    services: []
+#    version: 1
+#    agents: []
+#    missions: { allowAny: true }
 ---
 apiVersion: v1
 kind: Service

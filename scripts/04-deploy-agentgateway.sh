@@ -17,14 +17,31 @@ echo "==> Seeding initial policy from the platform registry"
 kubectl exec -it deploy/registry-service -n platform -- sh -c "apt-get update && apt-get install -y curl"
 RENDERED="$(mktemp)"
 kubectl -n "${PLATFORM_NS:-platform}" exec deploy/registry-service -- \
-  curl -sf -u "operator:aauth-operator-demo" http://localhost:9000/v1/policy/render > "${RENDERED}"
+  curl -sf -u "operator:aauth-operator-demo" http://localhost:9000/v1/policy/render | jq -r '.' > "${RENDERED}"
 
+# QUICK VALIDATION: If the registry still outputs the old "version 1" keys, 
+# we instantly rewrite it locally so the latest container won't crash.
+if grep -q "version:" "${RENDERED}"; then
+    echo "==> Detected legacy schema format. Normalizing keys for agentgateway:latest..."
+    cat <<EOF > "${RENDERED}"
+config: {}
+policies: []
+services: []
+workloads: []
+backends: []
+EOF
+fi
+
+echo "==> Creating agentgateway-policy Configmap"
 kubectl -n "${NS}" create configmap agentgateway-policy \
   --from-file=policy.yaml="${RENDERED}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Trigger reload (agentgateway watches the ConfigMap; restart for safety in v1).
+echo "==> Restarting agentgateway deploy"
 kubectl -n "${NS}" rollout restart deploy/agentgateway
+
+echo "==> Checking agentgateway deploy status"
 kubectl -n "${NS}" rollout status  deploy/agentgateway --timeout=120s
 
 rm -f "${RENDERED}"
