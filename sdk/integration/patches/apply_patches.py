@@ -80,6 +80,20 @@ APP_WIRING_TEMPLATE = dedent(
 
 # ---------- helpers --------------------------------------------------------- #
 
+def _insert_after_imports(src: str, block: str) -> str:
+    """Insert `block` after the import block at the top of the file."""
+    if block in src:
+        return src
+    lines = src.splitlines()
+    last_import_line = 0
+    for i, line in enumerate(lines[:120]):  # only look near the top
+        if re.match(r"^(from\s+\S+\s+import\s+|import\s+\S+)", line):
+            last_import_line = i
+    inject_at = last_import_line + 1
+    return "\n".join(lines[:inject_at] + [""] + block.splitlines() + [""] + lines[inject_at:])
+
+
+
 def _strip_app_wiring(src: str) -> str:
     """Remove previous app-wiring blocks, including the old unindented variant."""
     start_marker = "# ---- aauth_sdk app wiring (added by apply_patches.py) ----"
