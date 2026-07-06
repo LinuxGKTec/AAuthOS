@@ -333,6 +333,20 @@ Gautams-MacBook-Pro:supply-chain-ui gautamkumar$ tree
 So to proceed further we need to put Dockerfile under supply-chain-ui
 
 
+# Before
+def _insert_after_app_construct(src: str, block: str) -> str:
+    """Insert `block` after the first FastAPI construction, preserving scope."""
+    src = _strip_app_wiring(src)
+    pattern = re.compile(
 
+# After
+def _insert_after_app_construct(src: str, block: str) -> str:
+    """Insert `block` after the first FastAPI construction, preserving scope."""
+    # Check if any rendered variant is already present before stripping
+    start_marker = "# ---- aauth_sdk app wiring (added by apply_patches.py) ----"
+    if start_marker in src:
+        return src
+    src = _strip_app_wiring(src)
+    pattern = re.compile(
 
 

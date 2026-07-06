@@ -145,6 +145,10 @@ def _find_call_end(src: str, open_paren: int) -> int:
 
 def _insert_after_app_construct(src: str, block: str) -> str:
     """Insert `block` after the first FastAPI construction, preserving scope."""
+    # Check if any rendered variant is already present before stripping
+    start_marker = "# ---- aauth_sdk app wiring (added by apply_patches.py) ----"
+    if start_marker in src:
+        return src
     src = _strip_app_wiring(src)
     pattern = re.compile(
         r"^(?P<indent>[ \t]*)(?P<var>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*FastAPI\s*\(",

@@ -34,7 +34,7 @@ spec:
               value: https://platform.aauth.local/agents/supply-chain
             - name: AAUTH_SIGNATURE_SCHEME
               value: jwks
-            -  name: AAUTH_KEY_STATE_DIR
+            - name: AAUTH_KEY_STATE_DIR
               value: /tmp/aauth
           envFrom:
             - configMapRef: { name: platform-config }
