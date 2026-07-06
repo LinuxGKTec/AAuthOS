@@ -211,8 +211,8 @@ def main(repo_root: Path) -> int:
     )
     replace_interceptor(repo_root / "backend" / "app" / "services" / "aauth_interceptor.py")
 
-    # Supply chain agent
-   patch_first_existing(
+   # Supply chain agent
+    patch_first_existing(
         [
             repo_root / "supply-chain-agent" / "__main__.py",
             repo_root / "supply-chain-agent" / "_main_.py",
